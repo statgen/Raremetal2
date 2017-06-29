@@ -1,12 +1,17 @@
 Raremetal: A tool for rare variants meta-analyse
-	(c) 2012-2017 Shuang Feng, Dajiang Liu, Sai Chen, Goncalo Abecasiss
+	(c) 2012-2017 Sai Chen, Shuang Feng, Dajiang Liu, Goncalo Abecasiss
 
 For more info, please see wiki page
 http://genome.sph.umich.edu/wiki/RAREMETAL
 
-Newest version: v.4.14.9 released at 11/27/2016
-	Updated method for unbalanced studies.
-	View change log at: http://genome.sph.umich.edu/wiki/RAREMETAL_Change_Log
+Raremetal2 is an updated version of the meta-analysis software Raremetal
+It is 30% faster than the original version and takes less memory
+Compatiable with old Raremetalworker or rvtest generated summary files
 
-This version contains code for incoming method improvements (but not enabled)
+This is still a beta version. Single-variant meta-analysis looks good on T2D and MGI data,  but needs more optimizations on group test.
+
+New features:
+1. new method for unbalanced studies. To toggle that, please specify --useExact
+2. multi-allelic site meta-analysis enabled. However, if you have Raremetalworker or rvtest covariance files from previous versions, multi-allelic site meta-analysis won't work well in group test because these old covariance files do not record alleles for each sites.
+3. missing data in conditional analysis
 
