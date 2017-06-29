@@ -20,7 +20,6 @@
 #include <time.h>
 #include "Error.h"
 #include "Meta.h"
-#include "GroupFromAnnotation.h"
 #include "WriteLog.h"
 #include "unistd.h"
 
@@ -37,9 +36,9 @@ int main(int argc, char ** argv)
 	LONG_STRINGPARAMETER("summaryFiles", &Meta::summaryFiles)
 	LONG_STRINGPARAMETER("covFiles", &Meta::covFiles)
 	LONG_PARAMETER_GROUP("Grouping Methods")
-	LONG_STRINGPARAMETER("groupFile", &GroupFromAnnotation::groupFile)
-	LONG_STRINGPARAMETER("annotatedVcf", &GroupFromAnnotation::vcfInput)
-	LONG_STRINGPARAMETER("annotation", &GroupFromAnnotation::function)
+	LONG_STRINGPARAMETER("groupFile", &Meta::groupFile)
+	LONG_STRINGPARAMETER("annotatedVcf", &Meta::vcfInput)
+//	LONG_STRINGPARAMETER("annotation", &GroupFromAnnotation::function)
 	LONG_PARAMETER("writeVcf", &Meta::outvcf)
 	LONG_PARAMETER_GROUP("QC Options")
 	LONG_DOUBLEPARAMETER("hwe", &Meta::HWE)
@@ -51,28 +50,44 @@ int main(int argc, char ** argv)
 	LONG_PARAMETER("BBeta", &Meta::BBeta)
 	LONG_PARAMETER("SKAT", &Meta::SKAT)
 //	LONG_PARAMETER("SKATO", &Meta::SKATO)
-	LONG_PARAMETER("VT", &Meta::VTa)
+	LONG_PARAMETER("VT", &Meta::VT)
 	LONG_STRINGPARAMETER("condition", &Meta::cond)
 	//LONG_PARAMETER("permute", &Meta::VTp)
 	LONG_PARAMETER_GROUP("Other Options")
 	//LONG_PARAMETER("tabix", &Meta::tabix)
-	LONG_PARAMETER("labelHits", &GroupFromAnnotation::labelHits)
-	LONG_STRINGPARAMETER("geneMap", &GroupFromAnnotation::mapFile)
+//	LONG_PARAMETER("labelHits", &GroupFromAnnotation::labelHits)
+//	LONG_STRINGPARAMETER("geneMap", &GroupFromAnnotation::mapFile)
 	LONG_PARAMETER("correctGC", &Meta::correctGC)
 	LONG_STRINGPARAMETER("prefix", &Meta::prefix)
 	//LONG_STRINGPARAMETER("mapFile", &GroupFromAnnotation::mapFile)
-	LONG_DOUBLEPARAMETER("maf", &Meta::MAF_cutoff)
 	LONG_PARAMETER("longOutput", &Meta::fullResult)
 	//LONG_PARAMETER("founderAF", &Meta::founderAF)
 	LONG_PARAMETER("tabulateHits", &Meta::report)
 	LONG_PARAMETER("dosage", &Meta::dosage)
 	LONG_DOUBLEPARAMETER("hitsCutoff", &Meta::report_pvalue_cutoff)
+	LONG_DOUBLEPARAMETER("maf",&Meta::maf_threshold)
 	LONG_PARAMETER("altMAF", &Meta::altMAF )
 	LONG_STRINGPARAMETER("range", &Meta::Region)
 	LONG_PARAMETER("useExact", &Meta::useExactMetaMethod)
 	LONG_PARAMETER("normPop", &Meta::normPop)
-	LONG_STRINGPARAMETER("popFile", &Meta::popfile_name)
+	LONG_STRINGPARAMETER("popList", &Meta::pop_list_name)
+	LONG_STRINGPARAMETER("popVcf", &Meta::pop_vcf_name)
+// related binary trait: Dajiang's method
+	LONG_PARAMETER("relateBinary",&Meta::relateBinary)	
 	
+	LONG_PARAMETER("debug",&Meta::debug)
+//	LONG_PARAMETER("popVar",&Meta::popVar) // deprecated. Now default load position list
+	LONG_PARAMETER ("NoPreloading",&Meta::NoPreloading) // do not preload position list
+	LONG_PARAMETER("NoPlot",&Meta::NoPlot)
+//	LONG_PARAMETER("matchOnly",&Meta::matchOnly)
+	LONG_DOUBLEPARAMETER("matchDist",&Meta::matchDist)
+	LONG_DOUBLEPARAMETER("minMatchMAF",&Meta::minMatchMAF)
+	LONG_DOUBLEPARAMETER("maxMatchMAF",&Meta::maxMatchMAF)
+//	LONG_PARAMETER("noAdjustUnmatch",&Meta::noAdjustUnmatch)
+
+	LONG_PARAMETER("exclude_missing", &condAnalysis::exclude_missing)
+	LONG_PARAMETER("missing_as_zero", &condAnalysis::missing_as_zero)
+
 	LONG_PHONEHOME(VERSION)
 	END_LONG_PARAMETERS();
 	
@@ -91,8 +106,18 @@ int main(int argc, char ** argv)
 	if (Meta::useExactMetaMethod)
 		printf("\n\nWARNING: This method only works for unrelated samples! Plus if you have covariates, please make sure --makeResiduals is specified when running Raremetalworker!\n\n");
 
-	if (Meta::normPop && Meta::popfile_name=="")
-		Meta::popfile_name="/net/fantasia/home/yjingj/METAL/1KG/MAF_1KG.txt";
+	if (Meta::normPop) {
+		if (Meta::pop_vcf_name=="" && Meta::pop_list_name=="") {
+			printf("For population normalization, use default list and vcf file: \n");
+			printf("popList: /net/esp/saichen/newRM/data/1000G.poplist.txt\n");
+			printf("popVcf: /net/esp/saichen/newRM/data/ALL.autosomes.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.vcf.gz\n\n");
+			Meta::pop_list_name = "/net/esp/saichen/newRM/data/1000G.poplist.txt";
+			Meta::pop_vcf_name = "/net/esp/saichen/newRM/data/ALL.autosomes.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.vcf.gz";
+		}
+		else if (Meta::pop_vcf_name=="" || Meta::pop_list_name=="") {
+			error("To customize --normPop, please provide both --popList and --popVcf!n\n");
+		}
+	}
 	
 	FILE * logFile;
 	String filename;
@@ -114,20 +139,21 @@ int main(int argc, char ** argv)
 	try {
 		if(Meta::summaryFiles=="")
 			error("--summaryFiles can not be empty.\n");
-		GroupFromAnnotation group;
 		
-		if(GroupFromAnnotation::groupFile!="" && GroupFromAnnotation::vcfInput !="") {
+		if(Meta::groupFile!="" && Meta::vcfInput !="") {
 			printf("Warning: you have entered both groupfile and annotated VCF file. Groups will be read from the group file only.\n");
-			GroupFromAnnotation::vcfInput="";
+			Meta::vcfInput="";
 		}
 		
 		String path;
 		path = argv[0];
 		Meta meta (logFile);
 		meta.Prepare();
-		group.Run(path,logFile);
-		meta.PoolSummaryStat(group);
-		meta.Run(group);
+		meta.SingleVariantMetaAnalysis();
+		if (Meta::groupFile != "")
+			meta.GroupMetaAnalysis();
+		if (Meta::cond != "")
+			meta.ConditionalAnalysis();
 		
 		time(&now);
 		printf("\nAnalysis ends at: %s\n", ctime(&now));

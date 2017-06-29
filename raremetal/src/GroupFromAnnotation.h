@@ -13,10 +13,21 @@
 
 class GroupFromAnnotation
 {
-    public:
-        GroupFromAnnotation();
-        ~GroupFromAnnotation();
-	
+	public:
+	GroupFromAnnotation();
+	void GetGroupFromFile( String& group_file_name );
+
+	StringArray annoGroups;
+	StringArray chrom;
+	std::vector< std::vector<int> > positions;
+	std::vector< std::vector<String> > refs;
+	std::vector< std::vector<String> > alts;
+
+
+// old structures
+
+
+
 	//Input/Output options	
 	static String vcfInput;
 	static String groupFile;
