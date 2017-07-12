@@ -173,10 +173,15 @@ void annoGroups::loadCovStrings(String& cov_file_name)
 			int new_cov_col = cov_col+2;
 			markersExp.push_back(tokens[exp_col]);
 			markersCov.push_back(tokens[new_cov_col]);
-			markersFlip.push_back(flip_status);
 		}
-		else
+		else { // additionally check flip_allele_map
+			String key = tokens[0] + ":" + tokens[1];
+			if (flip_allele_map.find(key)!=flip_allele_map.end())
+				flip_status = true;
 			markersCov.push_back(tokens[cov_col]);
+		}
+		markersFlip.push_back(flip_status);
+		genome_idx++;
 		vec_idx++;
 	}
 	ifclose(covfile_);
@@ -194,14 +199,25 @@ bool annoGroups::isInMarkerIndex( StringArray& tokens, bool& flip_status )
 		key = tokens[1] + ":" + tokens[2] + ":" + tokens[3];
 	else
 		key = tokens[1];
-	if (markerIndex[tokens[0]].find(key)==markerIndex[tokens[0]].end()&&newFormat) {
-		key = tokens[1] + ":" + tokens[3] + ":" + tokens[2]; 
+	if (newFormat) {
 		if (markerIndex[tokens[0]].find(key)==markerIndex[tokens[0]].end())
-			return false;
-		else
-			flip_status = true;
+			return true;
+		else {
+			key = tokens[1] + ":" + tokens[3] + ":" + tokens[2]; 
+			if (markerIndex[tokens[0]].find(key)!=markerIndex[tokens[0]].end()) {
+				flip_status = true;
+				return true;
+			}
+			else
+				return false;
+		}
 	}
-	return true;
+	else {
+		if (markerIndex[tokens[0]].find(key)!=markerIndex[tokens[0]].end())
+			return true;
+		else
+			return false;
+	}
 }
 
 void annoGroups::setMarkersInCovs()
@@ -236,22 +252,22 @@ void annoGroups::setMarkersInCovs()
 			else
 				covs.AddTokens( markersCov[i2],",");
 			double flip_i = 1;
-			if (newFormat)
-				if (markersFlip[i2])
-					flip_i = -1;
-			int nj = cond_number>0 ? marker_number : i;
-			for(int j=0;j<=nj;j++) {
-				int pj = annoPositions[g][i];
+			if (markersFlip[i2])
+				flip_i = -1;
+			int nj = cond_number>0 ? marker_number : n;
+			for(int j=i;j<nj;j++) {
+				int pj = annoPositions[g][j];
 				String name_j = "";
 				name_j += pj;
 				if (newFormat)
 					name_j += ":" + annoRefs[g][j] + ":" + annoAlts[g][j];
 				int j1 = markerIndex[annoChrs[g][i]][name_j].first;
 				int j2 = markerIndex[annoChrs[g][i]][name_j].second;
+				if (j1==-1&&j2==-1)
+					continue;
 				double flip_j = 1;
-				if (newFormat)
-					if (markersFlip[j2])
-						flip_j = -1;
+				if (markersFlip[j2])
+					flip_j = -1;
 				int idx = j1-i1;
 				if (idx<0)
 					idx *= (-1);
@@ -388,6 +404,9 @@ void annoGroups::FlipAllele(int g,int i)
 	String tmp = annoRefs[g][i];
 	annoRefs[g][i] = annoAlts[g][i];
 	annoAlts[g][i] = tmp;
+	String key = annoChrs[g][i] + ":";
+	key += annoPositions[g][i];
+	flip_allele_map[key] = true;
 }
 
 void annoGroups::SetU(int g, int i, double u)
@@ -470,8 +489,8 @@ void annoGroups::MakeFullMatrix()
 	if (is_cov_half_matrix&&cond_number==0) {
 		for(int g=0;g<annoGenes.size();g++) {
 			for(int i=0;i<Covs[g].rows;i++)
-				for(int j=0;j<i;j++)
-					Covs[g][i][j] = Covs[g][j][i];
+				for(int j=i;j<Covs[g].rows;j++)
+					 Covs[g][j][i] = Covs[g][i][j];
 		}
 	}
 	is_cov_half_matrix = false;
@@ -488,7 +507,7 @@ void annoGroups::GroupTest(String& method, String& prefix)
 	else { // regular burden test
 		runBurdenTest(method);
 	}
-	String filename = prefix + "." + method + ".results";
+	String filename = prefix + ".meta." + method + ".results";
 	IFILE f = ifopen(filename,"w");
 	ifprintf(f,"#GROUP\tCOUNT\tVARIANTS\tAVR_MAF\tMIN_MAF\tMAX_MAF\tEFF_SIZE\tP_VALUE\n");
 	for(int g=0;g<annoGenes.size();g++) {
@@ -546,8 +565,12 @@ void annoGroups::RemoveMissingData()
 		else
 			printf("Warning: Gene #%d %s with no available MAF is skipped for group test!\n",g+1,annoGenes[g].c_str());
 	}
-	if (valid.size()==annoGenes.size()) // no missing element
+	if (valid.size()==annoGenes.size()) { // no missing element
+		// additional initialization
+		metaUs.Dimension(annoGenes.size(),0);
+		metaVs.Dimension(annoGenes.size(),0);
 		return;
+	}
 	// delete element if it is empty
 	Matrix* p = Covs;
 	Vector* pu = groupUs;

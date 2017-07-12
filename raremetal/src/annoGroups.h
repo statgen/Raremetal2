@@ -63,6 +63,7 @@ class annoGroups
 
 	// need to clear before load each cov file
 	std::map< String, std::map<String, std::pair<int,int> > > markerIndex; // chr -> pos:ref:alt -> in-genome index, vector index in RM
+	std::map<String, bool> flip_allele_map; // for old format,record the flipped markers due to MAF in annoGroups::FlipAllele. key: chr:pos
 	std::vector<bool> markersFlip; // indicate if the marker is flipped or not
 	std::vector<int> markersExp; // for new format, exp of markers
 	StringArray markersInWindow; // for old format
