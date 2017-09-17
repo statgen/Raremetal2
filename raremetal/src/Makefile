@@ -37,7 +37,7 @@ $(LIB_RAREMETAL_PATH)libRareMetal_debug.a:
 $(LIB_RAREMETAL_PATH)libRareMetal_profile.a:
 	$(MAKE) -C $(@D) --no-print-directory profile
 
-USER_COMPILE_VARS = -DVERSION="\"${VERSION}\"" -g -O0
+USER_COMPILE_VARS = -DVERSION="\"${VERSION}\"" -g -O0 -lstdc++
 #USER_COMPILE_VARS = -DVERSION="\"${VERSION}\"" -g -O0 -fstack-protector-all -static
 binary: USER_COMPILE_VARS +=
 binary: opt
