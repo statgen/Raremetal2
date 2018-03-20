@@ -1,2 +1,5 @@
 raremetal/obj/
 raremetalworker/obj/
+
+*.a
+*.o
