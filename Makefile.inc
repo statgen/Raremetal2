@@ -38,15 +38,15 @@ wholepackageLinux:
 
 wholepackageMac:
 	touch MAC_$(RELEASE_FILE)
-	$(WHOLEPACKAGE_CMD) -f MAC_$(RELEASE_FILE) --exclude=*_$(RELEASE_FILE) --transform 's,libRmath_MAC.a,libRmath.a,'
+	$(WHOLEPACKAGE_CMD) -f MAC_$(RELEASE_FILE) --exclude=*_$(RELEASE_FILE) --transform 's,'
 
 wholepackageCygwin64:
 	touch CYGWIN64_$(RELEASE_FILE)
-	$(WHOLEPACKAGE_CMD) -f CYGWIN64_$(RELEASE_FILE) --exclude=*_$(RELEASE_FILE) --transform 's,libRmath_cygwin64.a,libRmath.a,' 
+	$(WHOLEPACKAGE_CMD) -f CYGWIN64_$(RELEASE_FILE) --exclude=*_$(RELEASE_FILE) --transform 's,'
 
 wholepackageMingw:
 	touch MINGW_$(RELEASE_FILE)
-	$(WHOLEPACKAGE_CMD) -f MINGW_$(RELEASE_FILE) --exclude=*_$(RELEASE_FILE) --transform 's,libRmath_mingw.a,libRmath.a,'
+	$(WHOLEPACKAGE_CMD) -f MINGW_$(RELEASE_FILE) --exclude=*_$(RELEASE_FILE) --transform 's,'
 
 wholepackageAll: wholepackageLinux wholepackageMac wholepackageCygwin64 wholepackageMingw
 	@echo "Made all packages"

@@ -14,7 +14,6 @@ endif
 
 USER_INCLUDES = -I ../../otherLib/eigen-3.2.0 -I$(LIB_RAREMETAL_PATH)include
 LIB_RAREMETAL_PATH = ../../libRareMetal/
-RMATH_LIB =  $(LIB_RAREMETAL_PATH)/libRmath.a
 
 # USER_WARNINGS ?= -Werror -Wno-unused-variable $(shell if [ X$(CCVERSION) \> X4.2.0 ] ; then echo " -Wno-unused-result" ; fi)
 USER_WARNINGS =
@@ -28,9 +27,11 @@ debug: $(LIB_RAREMETAL_PATH)libRareMetal_debug.a
 profile: $(LIB_RAREMETAL_PATH)libRareMetal_profile.a
 
 # Define USER_LIBS as it should be used in each build type
-opt: USER_LIBS += $(LIB_RAREMETAL_PATH)libRareMetal.a $(RMATH_LIB)
-debug: USER_LIBS += $(LIB_RAREMETAL_PATH)libRareMetal_debug.a $(RMATH_LIB)
-profile: USER_LIBS += $(LIB_RAREMETAL_PATH)libRareMetal_profile.a $(RMATH_LIB)
+opt: USER_LIBS += $(LIB_RAREMETAL_PATH)libRareMetal.a
+debug: USER_LIBS += $(LIB_RAREMETAL_PATH)libRareMetal_debug.a
+profile: USER_LIBS += $(LIB_RAREMETAL_PATH)libRareMetal_profile.a
+
+OTHER_LIBS = -lRmath
 
 PARENT_MAKE = Makefile.src
 include ../../Makefile.inc
